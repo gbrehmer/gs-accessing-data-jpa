@@ -18,28 +18,38 @@ package com.example.accessingdatajpa;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.List;
-
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort.Direction;
 
 @DataJpaTest
 public class CustomerRepositoryTests {
-	@Autowired
-	private TestEntityManager entityManager;
+    @Autowired
+    private TestEntityManager entityManager;
 
-	@Autowired
-	private CustomerRepository customers;
+    @Autowired
+    private CustomerRepository customers;
 
-	@Test
-	public void testFindByLastName() {
-		Customer customer = new Customer("first", "last");
-		entityManager.persist(customer);
+    @Test
+    public void testFindByLastName() {
+        Customer customer = new Customer("first", "last", new Address("City", "Street"));
+        entityManager.persist(customer);
 
-		List<Customer> findByLastName = customers.findByLastName(customer.getLastName());
+        Page<Customer> findByLastName = customers.findByLastName(PageRequest.of(0, 20), customer.getLastName());
 
-		assertThat(findByLastName).extracting(Customer::getLastName).containsOnly(customer.getLastName());
-	}
+        assertThat(findByLastName).extracting(Customer::getLastName).containsOnly(customer.getLastName());
+
+        findByLastName = customers.findByLastName(PageRequest.of(0, 20, Direction.ASC, "addressCity"),
+            customer.getLastName());
+
+        findByLastName = customers.findByLastNameWithQuery(PageRequest.of(0, 20, Direction.ASC, "address.city"),
+            customer.getLastName());
+
+        findByLastName = customers.findByLastNameWithQuery(PageRequest.of(0, 20, Direction.ASC, "addressCity"),
+            customer.getLastName());
+    }
 }
